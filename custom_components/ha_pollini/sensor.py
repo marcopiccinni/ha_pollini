@@ -1,0 +1,234 @@
+"""Sensor platform for the 3BMeteo Pollen integration."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from homeassistant.components.sensor import SensorEntity
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+from .const import (
+    ATTRIBUTION,
+    BASE_URL,
+    CONF_FAMILIES,
+    CONF_LOCATION,
+    DEFAULT_FAMILIES,
+    DOMAIN,
+    FAMILIES,
+    LEVELS,
+    POLLEN_PATH,
+)
+from .coordinator import PollenCoordinator
+
+
+def _selected_keys(coordinator: PollenCoordinator) -> list[str]:
+    return [
+        key
+        for key in coordinator.entry.options.get(CONF_FAMILIES, DEFAULT_FAMILIES)
+        if key in FAMILIES
+    ]
+
+
+def _level_index(level: str | None) -> int | None:
+    return LEVELS.get(level or "", {}).get("index")
+
+
+def _level_color(level: str | None) -> str | None:
+    return LEVELS.get(level or "", {}).get("color")
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Create one sensor per selected family, plus an overall index."""
+    coordinator: PollenCoordinator = entry.runtime_data
+    keys = _selected_keys(coordinator)
+    _remove_orphan_entities(hass, entry, coordinator.canonical, keys)
+    entities: list[SensorEntity] = [
+        PollenFamilySensor(coordinator, key) for key in keys
+    ]
+    entities.append(PollenIndexSensor(coordinator))
+    async_add_entities(entities)
+
+
+def _remove_orphan_entities(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    canonical: str,
+    keys: list[str],
+) -> None:
+    """Drop registry entries for families no longer exposed."""
+    expected = {f"{canonical}_{key}" for key in keys}
+    expected.add(f"{canonical}_index")
+    registry = er.async_get(hass)
+    for reg_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if reg_entry.unique_id not in expected:
+            registry.async_remove(reg_entry.entity_id)
+
+
+class _PollenBaseSensor(SensorEntity):
+    """Common attributes for the pollen sensors."""
+
+    _attr_attribution = ATTRIBUTION
+    _attr_has_entity_name = True
+    _attr_should_poll = False
+
+    def __init__(self, coordinator: PollenCoordinator) -> None:
+        self.coordinator = coordinator
+        self._location = coordinator.entry.data.get(
+            CONF_LOCATION, coordinator.canonical
+        )
+
+    async def async_added_to_hass(self) -> None:
+        self.async_on_remove(
+            self.coordinator.async_add_listener(self.async_write_ha_state)
+        )
+
+    @property
+    def device_info(self) -> dict[str, Any]:
+        return {
+            "identifiers": {(DOMAIN, self.coordinator.canonical)},
+            "name": f"Pollini {self._location}",
+            "manufacturer": "3BMeteo",
+            "model": "Pollini",
+            "configuration_url": BASE_URL
+            + POLLEN_PATH.format(canonical=self.coordinator.canonical),
+        }
+
+    def _level_for(self, key: str, day_index: int = 0) -> str | None:
+        if not self.coordinator.data or day_index >= len(self.coordinator.data.days):
+            return None
+        family = self.coordinator.data.days[day_index].families.get(key)
+        return family.level if family else None
+
+    def _base_attributes(self) -> dict[str, Any]:
+        attrs: dict[str, Any] = {"localita": self._location}
+        if self.coordinator.data:
+            attrs["provincia"] = self.coordinator.data.resolved
+            attrs["aggiornamento"] = self.coordinator.data.updated
+        return attrs
+
+
+class PollenFamilySensor(_PollenBaseSensor):
+    """Today's pollen level for a single family."""
+
+    _attr_icon = "mdi:flower-pollen"
+
+    def __init__(self, coordinator: PollenCoordinator, key: str) -> None:
+        super().__init__(coordinator)
+        self.key = key
+        self._attr_name = FAMILIES[key]
+        self._attr_unique_id = f"{coordinator.canonical}_{key}"
+
+    @property
+    def native_value(self) -> str | None:
+        return self._level_for(self.key)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        level = self._level_for(self.key)
+        attrs = self._base_attributes()
+        attrs.update(
+            {
+                "famiglia": self.key,
+                "nome": FAMILIES[self.key],
+                "livello": level,
+                "indice": _level_index(level),
+                "colore": _level_color(level),
+                "sottospecie": _serialize_subs(self.coordinator, self.key),
+                "previsioni": _serialize_days(self.coordinator, self.key),
+            }
+        )
+        return attrs
+
+
+class PollenIndexSensor(_PollenBaseSensor):
+    """Overall pollen: the worst level among the selected families."""
+
+    _attr_name = "Indice"
+    _attr_icon = "mdi:flower"
+
+    def __init__(self, coordinator: PollenCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.canonical}_index"
+
+    def _worst_level(self) -> str | None:
+        worst: str | None = None
+        worst_index = 0
+        for key in _selected_keys(self.coordinator):
+            index = _level_index(self._level_for(key)) or 0
+            if index >= worst_index:
+                worst_index = index
+                worst = self._level_for(key)
+        return worst
+
+    @property
+    def native_value(self) -> str | None:
+        return self._worst_level()
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        level = self._worst_level()
+        attrs = self._base_attributes()
+        attrs.update(
+            {
+                "livello": level,
+                "indice": _level_index(level),
+                "colore": _level_color(level),
+                "giorni": _worst_by_day(self.coordinator),
+            }
+        )
+        return attrs
+
+
+def _serialize_subs(coordinator: PollenCoordinator, key: str) -> list[dict[str, Any]]:
+    day = coordinator.current_day()
+    family = day.families.get(key) if day else None
+    if not family:
+        return []
+    return [
+        {"nome": sub.name, "livello": sub.level, "indice": _level_index(sub.level)}
+        for sub in family.subs
+    ]
+
+
+def _serialize_days(coordinator: PollenCoordinator, key: str) -> list[dict[str, Any]]:
+    if not coordinator.data:
+        return []
+    result: list[dict[str, Any]] = []
+    for day in coordinator.data.days:
+        family = day.families.get(key)
+        level = family.level if family else None
+        result.append(
+            {
+                "giorno": day.label,
+                "livello": level,
+                "indice": _level_index(level),
+            }
+        )
+    return result
+
+
+def _worst_by_day(coordinator: PollenCoordinator) -> list[dict[str, Any]]:
+    if not coordinator.data:
+        return []
+    keys = _selected_keys(coordinator)
+    result: list[dict[str, Any]] = []
+    for day in coordinator.data.days:
+        worst: str | None = None
+        worst_index = 0
+        for key in keys:
+            family = day.families.get(key)
+            index = _level_index(family.level if family else None) or 0
+            if index >= worst_index:
+                worst_index = index
+                worst = family.level if family else None
+        result.append(
+            {"giorno": day.label, "livello": worst, "indice": worst_index or None}
+        )
+    return result
