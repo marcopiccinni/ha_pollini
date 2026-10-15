@@ -2,7 +2,7 @@
 
 The pollen page (``/meteo/<canonical>/pollini``) is server-rendered and, since
 pollen is forecast per province, any town URL redirects to the province page
-(e.g. ``/meteo/modena/pollini``). The page lists seven days; for each day it
+(e.g. ``/meteo/roma/pollini``). The page lists seven days; for each day it
 shows the pollen level ("Assente", "Basso", "Medio", "Alto") for fifteen
 families, each with an optional list of sub-species.
 """

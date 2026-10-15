@@ -12,12 +12,13 @@ struttura HTML parsata, invarianti e decisioni di design.
 | Pollini | `https://www.3bmeteo.com/meteo/<canonical>/pollini` |
 | Ricerca località | `https://www.3bmeteo.com/search/search_localita/<query>` |
 
-- `<canonical>` è lo slug del comune (es. `modena`, `novi+di+modena`), ottenuto
+- `<canonical>` è lo slug del comune (es. `roma`, `roma+centro+storico`), ottenuto
   dalla ricerca come campo `canonical`.
 - La ricerca restituisce JSON: `nome_loc`, `canonical`, `regione`, `stato`,
   `prov`, `id_localita`, `lat`, `lon`.
-- **I pollini sono per provincia**: `/meteo/bomporto/pollini` risponde con 301
-  verso `/meteo/modena/pollini`. `aiohttp` segue il redirect; il canonical
+- **I pollini sono per provincia**: `/meteo/<comune>/pollini` risponde con 301
+  verso la pagina della provincia (es. i comuni della provincia di Roma verso
+  `/meteo/roma/pollini`). `aiohttp` segue il redirect; il canonical
   risolto viene estratto da `resp.url` (`client._resolved_canonical`).
 
 ## Struttura HTML parsata

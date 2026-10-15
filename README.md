@@ -29,8 +29,8 @@ Per ogni comune configurato:
 | `sensor.<localita>_<famiglia>` | Livello di polline di una famiglia (Assente/Basso/Medio/Alto) |
 | `sensor.<localita>_indice` | Livello peggiore tra le famiglie selezionate |
 
-Esempio di famiglie: `sensor.pollini_modena_composite`,
-`sensor.pollini_modena_graminacee`, `sensor.pollini_modena_urticacee`. Gli id
+Esempio di famiglie: `sensor.pollini_roma_composite`,
+`sensor.pollini_roma_graminacee`, `sensor.pollini_roma_urticacee`. Gli id
 reali dipendono dal nome che assegni al dispositivo; le famiglie non
 selezionate nelle opzioni non vengono create.
 
@@ -61,7 +61,7 @@ tua configurazione e riavvia.
 
 ## Configurazione
 
-1. Cerca il **nome del comune** (es. `Modena`).
+1. Cerca il **nome del comune** (es. `Roma`).
 2. Scegli il comune esatto tra i risultati.
 3. (Facoltativo) **Configura** la voce per scegliere le famiglie e
    l'intervallo di aggiornamento (default 1 ora).
@@ -73,12 +73,12 @@ L'integrazione include e registra automaticamente la card `ha-pollini-card`
 
 ```yaml
 type: custom:ha-pollini-card
-title: Pollini — Modena
-entity: sensor.pollini_modena_composite
+title: Pollini — Roma
+entity: sensor.pollini_roma_composite
 entities:
-  - sensor.pollini_modena_graminacee
-  - sensor.pollini_modena_urticacee
-  - sensor.pollini_modena_oleacee
+  - sensor.pollini_roma_graminacee
+  - sensor.pollini_roma_urticacee
+  - sensor.pollini_roma_oleacee
 ```
 
 `entity` è la famiglia (o l'indice) mostrata in evidenza; `entities` sono
@@ -91,7 +91,7 @@ nella tua istanza.
 type: vertical-stack
 cards:
   - type: gauge
-    entity: sensor.pollini_modena_indice
+    entity: sensor.pollini_roma_indice
     name: Indice
     min: 1
     max: 4
@@ -104,10 +104,10 @@ cards:
   - type: entities
     title: Famiglie (oggi)
     entities:
-      - sensor.pollini_modena_composite
-      - sensor.pollini_modena_graminacee
-      - sensor.pollini_modena_urticacee
-      - sensor.pollini_modena_oleacee
+      - sensor.pollini_roma_composite
+      - sensor.pollini_roma_graminacee
+      - sensor.pollini_roma_urticacee
+      - sensor.pollini_roma_oleacee
 ```
 
 ## Livelli
