@@ -17,7 +17,7 @@ const LEVEL_COLORS = {
 };
 const LEVEL_ORDER = ["Assente", "Basso", "Medio", "Alto"];
 
-const CARD_VERSION = "0.1.0";
+const CARD_VERSION = "0.1.1";
 
 class HaPolliniCard extends HTMLElement {
   constructor() {
@@ -46,7 +46,7 @@ class HaPolliniCard extends HTMLElement {
 
   static getStubConfig(hass) {
     const entity = Object.keys(hass.states).find(
-      (e) => e.startsWith("sensor.") && hass.states[e].attributes.livello !== undefined
+      (e) => e.startsWith("sensor.") && hass.states[e].attributes.famiglia !== undefined
     );
     return { entity: entity || "sensor.pollini_esempio_composite" };
   }
@@ -183,11 +183,37 @@ class HaPolliniCard extends HTMLElement {
   }
 }
 
-customElements.define("ha-pollini-card", HaPolliniCard);
+const CARD_TAG = "ha-pollini-card";
+
+const defineCard = () => {
+  try {
+    if (!customElements.get(CARD_TAG)) {
+      customElements.define(CARD_TAG, HaPolliniCard);
+    }
+  } catch (_err) {
+    // Already registered in this registry.
+  }
+};
+
+// Home Assistant replaces window.customElements with a scoped registry while
+// booting, after modules loaded via frontend.add_extra_js_url() may already
+// have run. An element defined on the previous registry is not visible on the
+// new one, which makes the card disappear from the card picker and the
+// dashboard. Register now and again once the swap is observed.
+const initialRegistry = globalThis.customElements;
+defineCard();
+if (globalThis.customElements === initialRegistry) {
+  const swapWatcher = window.setInterval(() => {
+    if (globalThis.customElements === initialRegistry) return;
+    window.clearInterval(swapWatcher);
+    defineCard();
+  }, 200);
+  window.setTimeout(() => window.clearInterval(swapWatcher), 30000);
+}
 
 window.customCards = window.customCards || [];
 window.customCards.push({
-  type: "ha-pollini-card",
+  type: CARD_TAG,
   name: "3BMeteo Pollini",
   description: "Livello pollini, sottospecie e previsioni 7 giorni",
   version: CARD_VERSION,
