@@ -15,7 +15,30 @@ const LEVEL_COLORS = {
   Medio: "#ef6c00",
   Alto: "#c62828",
 };
-const CARD_VERSION = "0.1.5";
+
+const FONT_SCALES = {
+  small: 0.85,
+  normal: 1,
+  large: 1.15,
+  xlarge: 1.3,
+};
+
+const IT_MONTHS = {
+  gennaio: 1,
+  febbraio: 2,
+  marzo: 3,
+  aprile: 4,
+  maggio: 5,
+  giugno: 6,
+  luglio: 7,
+  agosto: 8,
+  settembre: 9,
+  ottobre: 10,
+  novembre: 11,
+  dicembre: 12,
+};
+
+const CARD_VERSION = "0.1.6";
 
 class HaPolliniCard extends HTMLElement {
   constructor() {
@@ -35,8 +58,20 @@ class HaPolliniCard extends HTMLElement {
     // Defaults: only an explicit `false` hides a block; unset stays visible.
     this._config.show_subs = this._config.show_subs !== false;
     this._config.show_forecast = this._config.show_forecast !== false;
+    this._config.show_badge_name = this._config.show_badge_name !== false;
+    this._config.font_size = this._config.font_size || "normal";
     this._selectedDay = 0;
     if (this._hass) this._render();
+  }
+
+  _scale() {
+    return FONT_SCALES[this._config.font_size] || 1;
+  }
+
+  _limitForecast(forecast) {
+    const n = Number(this._config.forecast_days);
+    if (!this._config.forecast_days || Number.isNaN(n) || n <= 0) return forecast;
+    return forecast.slice(0, n);
   }
 
   _onClick(ev) {
@@ -97,7 +132,7 @@ class HaPolliniCard extends HTMLElement {
       this._config.title || attrs.friendly_name || stateObj.entity_id;
     const name = attrs.nome || attrs.famiglia || "";
     const isSummary = !!attrs.famiglie_piu_presenti;
-    const forecast = attrs.previsioni || attrs.giorni || [];
+    const forecast = this._limitForecast(attrs.previsioni || attrs.giorni || []);
     const selected = forecast.length
       ? Math.min(this._selectedDay, forecast.length - 1)
       : 0;
@@ -120,10 +155,14 @@ class HaPolliniCard extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <style>${HaPolliniCard._css()}</style>
       <ha-card>
-        <div class="content">
+        <div class="content" style="font-size:${this._scale()}em">
           <div class="header">
             <span class="title">${title}</span>
-            <span class="updated">${attrs.aggiornamento ? "Agg. " + attrs.aggiornamento : attrs.provincia || ""}</span>
+            <span class="updated">${
+              attrs.aggiornamento
+                ? "Agg. " + _fmtAggiornamento(attrs.aggiornamento)
+                : attrs.provincia || ""
+            }</span>
           </div>
           ${this._badge(level, name)}
           ${
@@ -158,10 +197,13 @@ class HaPolliniCard extends HTMLElement {
 
   _badge(level, name) {
     const color = LEVEL_COLORS[level] || "#999";
+    const label = this._config.show_badge_name
+      ? `<span class="bl-name">${name}</span>`
+      : "";
     return `
       <div class="badge">
         <div class="badge-level" style="background:${color}" data-more-info="1" title="Mostra lo storico">
-          <span class="bl-name">${name}</span>
+          ${label}
           <span class="bl-value">${level || "—"}</span>
         </div>
       </div>`;
@@ -225,20 +267,20 @@ class HaPolliniCard extends HTMLElement {
       .bl-name { font-size: .8rem; opacity: .9; }
       .bl-value { font-size: 1.6rem; font-weight: 700; }
       .subs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-      .sub { display: flex; gap: 6px; align-items: baseline; font-size: .85rem; background: var(--secondary-background-color, #f4f4f4); border-radius: 8px; padding: 3px 8px; }
+      .sub { display: flex; gap: 6px; align-items: baseline; font-size: .85em; background: var(--secondary-background-color, #f4f4f4); border-radius: 8px; padding: 3px 8px; }
       .s-name { color: var(--primary-text-color); }
       .s-level { font-weight: 600; }
       .summary { margin-top: 12px; border-top: 1px solid var(--divider-color); padding-top: 8px; }
-      .sum-title { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--secondary-text-color); margin-bottom: 4px; }
-      .sum-row { display: flex; gap: 8px; align-items: baseline; font-size: .85rem; padding: 2px 0; }
+      .sum-title { font-size: .72em; text-transform: uppercase; letter-spacing: .04em; color: var(--secondary-text-color); margin-bottom: 4px; }
+      .sum-row { display: flex; gap: 8px; align-items: baseline; font-size: .85em; padding: 2px 0; }
       .sum-row .s-name { font-weight: 600; }
       .sum-row .s-lvl { margin-left: auto; font-weight: 600; }
       .forecast { display: flex; gap: 6px; margin-top: 12px; overflow-x: auto; }
       .day { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 48px; flex: 1; cursor: pointer; border-radius: 8px; padding: 3px 0; }
       .day.selected { background: var(--secondary-background-color, rgba(128,128,128,.14)); }
-      .d-name { font-size: .7rem; color: var(--secondary-text-color); }
+      .d-name { font-size: .7em; color: var(--secondary-text-color); }
       .d-dot { width: 14px; height: 14px; border-radius: 50%; }
-      .d-level { font-size: .65rem; font-weight: 600; }
+      .d-level { font-size: .65em; font-weight: 600; }
       .extras { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; border-top: 1px solid var(--divider-color); padding-top: 10px; }
       .extra { display: flex; gap: 6px; align-items: center; font-size: .85rem; }
       .e-dot { width: 10px; height: 10px; border-radius: 50%; }
@@ -249,6 +291,21 @@ class HaPolliniCard extends HTMLElement {
   }
 }
 
+// Compact form of the site's "16 ottobre alle ore 12:11" -> "16/10 12:11".
+function _fmtAggiornamento(value) {
+  if (!value) return "";
+  const m = String(value).match(
+    /(\d{1,2})\s+([a-zàèéìòù]+)\s+alle\s+ore\s+(\d{1,2}):(\d{2})/i
+  );
+  if (m) {
+    const mo = IT_MONTHS[m[2].toLowerCase()];
+    if (mo) {
+      return `${m[1].padStart(2, "0")}/${String(mo).padStart(2, "0")} ${m[3].padStart(2, "0")}:${m[4]}`;
+    }
+  }
+  return value;
+}
+
 const EDITOR_TAG = "ha-pollini-card-editor";
 
 const EDITOR_LABELS = {
@@ -257,6 +314,9 @@ const EDITOR_LABELS = {
   entities: "Altre famiglie (opzionale)",
   show_subs: "Mostra le sottospecie",
   show_forecast: "Mostra le previsioni",
+  show_badge_name: "Mostra il nome nello stato",
+  forecast_days: "Giorni di previsione da mostrare",
+  font_size: "Dimensione del testo",
 };
 
 class HaPolliniCardEditor extends HTMLElement {
@@ -277,6 +337,9 @@ class HaPolliniCardEditor extends HTMLElement {
     return {
       show_subs: true,
       show_forecast: true,
+      show_badge_name: true,
+      forecast_days: 7,
+      font_size: "normal",
     };
   }
 
@@ -319,6 +382,25 @@ class HaPolliniCardEditor extends HTMLElement {
       },
       { name: "show_subs", selector: { boolean: {} } },
       { name: "show_forecast", selector: { boolean: {} } },
+      { name: "show_badge_name", selector: { boolean: {} } },
+      {
+        name: "forecast_days",
+        selector: { number: { min: 1, max: 7, mode: "box", step: 1 } },
+      },
+      {
+        name: "font_size",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "small", label: "Piccolo" },
+              { value: "normal", label: "Normale" },
+              { value: "large", label: "Grande" },
+              { value: "xlarge", label: "Molto grande" },
+            ],
+          },
+        },
+      },
     ];
     this._form.computeLabel = (schema) => EDITOR_LABELS[schema.name] || schema.name;
   }

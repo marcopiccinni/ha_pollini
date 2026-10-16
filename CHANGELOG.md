@@ -5,6 +5,20 @@ Tutte le modifiche degne di nota di questo progetto.
 Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e il
 progetto usa il [Versionamento Semantico](https://semver.org/lang/it/).
 
+## [0.1.6] - 2026-10-16
+
+### Aggiunto
+
+- Nuove opzioni della card: `forecast_days` (quante giornate mostrare nella
+  striscia delle previsioni), `show_badge_name` (mostra/nascondi il nome della
+  famiglia nel riquadro dello stato, default attivo) e `font_size`
+  (`small`/`normal`/`large`/`xlarge`) per ingrandire o ridurre il testo senza
+  toccare titolo, ultimo aggiornamento e stato principale.
+
+### Modificato
+
+- L'ultimo aggiornamento è mostrato in un formato compatto (`gg/mm hh:mm`).
+
 ## [0.1.5] - 2026-10-16
 
 ### Corretto

@@ -124,6 +124,9 @@ badge in evidenza e le sottospecie si aggiornano a quella data (la giornata scel
 | `entities` | — | Famiglie aggiuntive mostrate come righe |
 | `show_subs` | `true` | Mostra le sottospecie della famiglia selezionata |
 | `show_forecast` | `true` | Mostra la striscia dei giorni |
+| `show_badge_name` | `true` | Mostra il nome della famiglia nel riquadro dello stato |
+| `forecast_days` | tutti | Quante giornate mostrare nella striscia delle previsioni (oggi incluso, 1-7) |
+| `font_size` | `normal` | Dimensione del testo: `small`, `normal`, `large`, `xlarge` (non modifica titolo, ultimo aggiornamento e stato principale) |
 
 Per disattivare un'opzione impostala a `false`, ad esempio:
 

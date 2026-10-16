@@ -6,7 +6,7 @@ from datetime import timedelta
 from typing import Final
 
 DOMAIN: Final = "ha_pollini"
-VERSION: Final = "0.1.5"
+VERSION: Final = "0.1.6"
 
 # 3BMeteo public web pages (scraped; see DISCLAIMER).
 BASE_URL: Final = "https://www.3bmeteo.com"
