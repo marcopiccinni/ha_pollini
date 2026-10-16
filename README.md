@@ -40,7 +40,7 @@ selezionate nelle opzioni non vengono create.
 - `indice` — 1…4, `colore` — colore del livello
 - `nome` — nome esteso (es. `Cupressacee/Taxacee`), `famiglia` — chiave
 - `sottospecie` — elenco delle specie con il relativo livello
-- `previsioni` — i 7 giorni con livello e indice
+- `previsioni` — i 7 giorni con livello, indice e sottospecie
 - `provincia` — provincia risolta, `aggiornamento` — timestamp del bollettino
 
 ## Installazione
@@ -69,7 +69,20 @@ tua configurazione e riavvia.
 ## Card Lovelace
 
 L'integrazione include e registra automaticamente la card `ha-pollini-card`
-(non serve installare nulla dal frontend). Esempio:
+(non serve installare nulla dal frontend). La card si configura anche
+dall'**editor visuale** (entità principale, titolo, famiglie aggiuntive e
+opzione per le sottospecie).
+
+Esempio minimo (una sola famiglia o l'indice):
+
+```yaml
+type: custom:ha-pollini-card
+title: Pollini — Roma
+entity: sensor.pollini_roma_composite
+```
+
+Facoltativamente puoi aggiungere altre famiglie, mostrate come riepilogo in
+fondo alla card:
 
 ```yaml
 type: custom:ha-pollini-card
@@ -81,9 +94,14 @@ entities:
   - sensor.pollini_roma_oleacee
 ```
 
-`entity` è la famiglia (o l'indice) mostrata in evidenza; `entities` sono
-famiglie aggiuntive mostrate in elenco. Sostituisci gli id con quelli presenti
-nella tua istanza.
+`entity` è la famiglia (o l'indice) mostrata in evidenza; `entities` (facoltativo)
+sono famiglie aggiuntive mostrate in elenco. Sostituisci gli id con quelli
+presenti nella tua istanza.
+
+Nella striscia delle previsioni ogni giornata è **cliccabile**: selezionandola, il
+badge in evidenza e le sottospecie si aggiornano a quella data (la giornata scelta
+è evidenziata; di default è "oggi"). Cliccando il badge si apre la finestra con lo
+**storico** dell'entità.
 
 ### Alternativa con le card built-in
 

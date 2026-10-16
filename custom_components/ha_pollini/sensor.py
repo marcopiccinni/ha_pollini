@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 
 from homeassistant.components.sensor import SensorEntity
@@ -9,6 +10,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import dt as dt_util
 
 from .const import (
     ATTRIBUTION,
@@ -30,6 +32,15 @@ def _selected_keys(coordinator: PollenCoordinator) -> list[str]:
         for key in coordinator.entry.options.get(CONF_FAMILIES, DEFAULT_FAMILIES)
         if key in FAMILIES
     ]
+
+
+_IT_DAYS = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"]
+
+
+def _day_label(index: int) -> str:
+    """Return a uniform 'Gio 16' style label for the day at ``index`` (0 = today)."""
+    date = dt_util.now().date() + timedelta(days=index)
+    return f"{_IT_DAYS[date.weekday()]} {date.day}"
 
 
 def _level_index(level: str | None) -> int | None:
@@ -201,14 +212,22 @@ def _serialize_days(coordinator: PollenCoordinator, key: str) -> list[dict[str, 
     if not coordinator.data:
         return []
     result: list[dict[str, Any]] = []
-    for day in coordinator.data.days:
+    for index, day in enumerate(coordinator.data.days):
         family = day.families.get(key)
         level = family.level if family else None
         result.append(
             {
-                "giorno": day.label,
+                "giorno": _day_label(index),
                 "livello": level,
                 "indice": _level_index(level),
+                "sottospecie": [
+                    {
+                        "nome": sub.name,
+                        "livello": sub.level,
+                        "indice": _level_index(sub.level),
+                    }
+                    for sub in (family.subs if family else [])
+                ],
             }
         )
     return result
@@ -219,7 +238,7 @@ def _worst_by_day(coordinator: PollenCoordinator) -> list[dict[str, Any]]:
         return []
     keys = _selected_keys(coordinator)
     result: list[dict[str, Any]] = []
-    for day in coordinator.data.days:
+    for day_index, day in enumerate(coordinator.data.days):
         worst: str | None = None
         worst_index = 0
         for key in keys:
@@ -229,6 +248,10 @@ def _worst_by_day(coordinator: PollenCoordinator) -> list[dict[str, Any]]:
                 worst_index = index
                 worst = family.level if family else None
         result.append(
-            {"giorno": day.label, "livello": worst, "indice": worst_index or None}
+            {
+                "giorno": _day_label(day_index),
+                "livello": worst,
+                "indice": worst_index or None,
+            }
         )
     return result

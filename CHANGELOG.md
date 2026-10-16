@@ -5,6 +5,36 @@ Tutte le modifiche degne di nota di questo progetto.
 Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e il
 progetto usa il [Versionamento Semantico](https://semver.org/lang/it/).
 
+## [0.1.3] - 2026-10-16
+
+### Aggiunto
+
+- L'editor visuale della card permette di scegliere entità principale, titolo,
+  famiglie aggiuntive e l'opzione per mostrare le sottospecie.
+- Nella striscia delle previsioni si può cliccare una giornata per aggiornare
+  il badge e le sottospecie a quella data (la giornata selezionata è
+  evidenziata; di default resta "oggi").
+- Cliccando il badge si apre la finestra con lo storico dell'entità.
+
+### Modificato
+
+- Rimosso il promemoria dei colori (i quattro pallini) sotto il badge.
+- Le etichette dei giorni nella striscia delle previsioni sono ora uniformi
+  ("Ven 16", "Sab 17", …) anche per oggi e domani.
+- Ogni voce di previsione espone ora le sottospecie del relativo giorno.
+
+## [0.1.2] - 2026-10-16
+
+### Aggiunto
+
+- Editor visuale della card: selezione dell'entità principale, titolo,
+  famiglie aggiuntive e opzione per mostrare le sottospecie. La card si
+  configura ora anche dall'interfaccia, incluse più famiglie.
+
+### Modificato
+
+- Rimosso il promemoria dei colori (i quattro pallini) sotto il badge.
+
 ## [0.1.1] - 2026-10-16
 
 ### Corretto
