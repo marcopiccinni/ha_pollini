@@ -64,6 +64,7 @@ async def async_setup_entry(
         PollenFamilySensor(coordinator, key) for key in keys
     ]
     entities.append(PollenIndexSensor(coordinator))
+    entities.append(PollenSummarySensor(coordinator))
     async_add_entities(entities)
 
 
@@ -76,6 +77,7 @@ def _remove_orphan_entities(
     """Drop registry entries for families no longer exposed."""
     expected = {f"{canonical}_{key}" for key in keys}
     expected.add(f"{canonical}_index")
+    expected.add(f"{canonical}_riepilogo")
     registry = er.async_get(hass)
     for reg_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
         if reg_entry.unique_id not in expected:
@@ -112,10 +114,7 @@ class _PollenBaseSensor(SensorEntity):
         }
 
     def _level_for(self, key: str, day_index: int = 0) -> str | None:
-        if not self.coordinator.data or day_index >= len(self.coordinator.data.days):
-            return None
-        family = self.coordinator.data.days[day_index].families.get(key)
-        return family.level if family else None
+        return _family_level(self.coordinator, key, day_index)
 
     def _base_attributes(self) -> dict[str, Any]:
         attrs: dict[str, Any] = {"localita": self._location}
@@ -168,29 +167,103 @@ class PollenIndexSensor(_PollenBaseSensor):
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.canonical}_index"
 
-    def _worst_level(self) -> str | None:
-        worst: str | None = None
-        worst_index = 0
-        for key in _selected_keys(self.coordinator):
-            index = _level_index(self._level_for(key)) or 0
-            if index >= worst_index:
-                worst_index = index
-                worst = self._level_for(key)
-        return worst
-
     @property
     def native_value(self) -> str | None:
-        return self._worst_level()
+        return _worst_level(self.coordinator)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        level = self._worst_level()
+        level = _worst_level(self.coordinator)
         attrs = self._base_attributes()
         attrs.update(
             {
                 "livello": level,
                 "indice": _level_index(level),
                 "colore": _level_color(level),
+                "giorni": _worst_by_day(self.coordinator),
+            }
+        )
+        return attrs
+
+
+def _worst_level(coordinator: PollenCoordinator) -> str | None:
+    """The worst level among the selected families for the current day."""
+    worst: str | None = None
+    worst_index = 0
+    for key in _selected_keys(coordinator):
+        index = _level_index(_family_level(coordinator, key)) or 0
+        if index >= worst_index:
+            worst_index = index
+            worst = _family_level(coordinator, key)
+    return worst
+
+
+def _family_level(
+    coordinator: PollenCoordinator, key: str, day_index: int = 0
+) -> str | None:
+    if not coordinator.data or day_index >= len(coordinator.data.days):
+        return None
+    family = coordinator.data.days[day_index].families.get(key)
+    return family.level if family else None
+
+
+class PollenSummarySensor(_PollenBaseSensor):
+    """Summary of the pollen risk: worst level plus the most severe families.
+
+    The "present" families are the ones above *Assente*, ordered by severity,
+    so the entity works as a generic pollen-risk indicator for dashboards,
+    cards and automations.
+    """
+
+    _attr_name = "Riepilogo"
+    _attr_icon = "mdi:flower-pollen-outline"
+
+    def __init__(self, coordinator: PollenCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.canonical}_riepilogo"
+
+    def _rows(self) -> list[dict[str, Any]]:
+        rows: list[dict[str, Any]] = []
+        for key in _selected_keys(self.coordinator):
+            level = _family_level(self.coordinator, key)
+            index = _level_index(level) or 0
+            rows.append(
+                {
+                    "chiave": key,
+                    "nome": FAMILIES[key],
+                    "livello": level,
+                    "indice": index,
+                    "colore": _level_color(level),
+                }
+            )
+        rows.sort(key=lambda row: (-row["indice"], row["nome"]))
+        return rows
+
+    @property
+    def native_value(self) -> str | None:
+        return _worst_level(self.coordinator)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        level = _worst_level(self.coordinator)
+        rows = self._rows()
+        present = [row for row in rows if row["indice"] > 1]
+        counts: dict[str, int] = {}
+        for row in rows:
+            name = row["livello"] or "—"
+            counts[name] = counts.get(name, 0) + 1
+        attrs = self._base_attributes()
+        attrs.update(
+            {
+                "nome": "Riepilogo",
+                "livello": level,
+                "indice": _level_index(level),
+                "colore": _level_color(level),
+                "famiglie_piu_presenti": present,
+                "conteggio_per_livello": counts,
+                "totale_famiglie": len(rows),
+                "famiglie_presenti": len(present),
+                "famiglie": rows,
                 "giorni": _worst_by_day(self.coordinator),
             }
         )

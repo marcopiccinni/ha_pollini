@@ -5,6 +5,25 @@ Tutte le modifiche degne di nota di questo progetto.
 Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e il
 progetto usa il [Versionamento Semantico](https://semver.org/lang/it/).
 
+## [0.1.4] - 2026-10-16
+
+### Aggiunto
+
+- Nuovo sensore `sensor.<provincia>_riepilogo`: lo stato è il livello peggiore
+  del giorno; gli attributi includono `famiglie` (tutte le famiglie selezionate
+  ordinate per severità), `famiglie_piu_presenti` (escluse quelle "Assenti"),
+  `conteggio_per_livello`, `famiglie_presenti`, `totale_famiglie` e `giorni`.
+- Nuova opzione della card `show_forecast` per nascondere la striscia dei
+  giorni.
+- La card mostra la sezione "Pollini più presenti" (famiglia e livello) quando
+  l'entità è il riepilogo.
+
+### Modificato
+
+- Le opzioni booleane della card (`show_subs`, `show_forecast`) accettano ora
+  esplicitamente `false`: prima un valore `false` esplicito veniva sovrascritto
+  dal default.
+
 ## [0.1.3] - 2026-10-16
 
 ### Aggiunto

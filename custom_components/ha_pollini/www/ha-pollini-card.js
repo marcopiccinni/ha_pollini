@@ -15,7 +15,7 @@ const LEVEL_COLORS = {
   Medio: "#ef6c00",
   Alto: "#c62828",
 };
-const CARD_VERSION = "0.1.3";
+const CARD_VERSION = "0.1.4";
 
 class HaPolliniCard extends HTMLElement {
   constructor() {
@@ -31,7 +31,10 @@ class HaPolliniCard extends HTMLElement {
     if (!config || !config.entity) {
       throw new Error("È richiesto 'entity' (un sensore ha_pollini).");
     }
-    this._config = { show_subs: true, ...config };
+    this._config = { ...config };
+    // Defaults: only an explicit `false` hides a block; unset stays visible.
+    this._config.show_subs = this._config.show_subs !== false;
+    this._config.show_forecast = this._config.show_forecast !== false;
     this._selectedDay = 0;
     if (this._hass) this._render();
   }
@@ -93,6 +96,7 @@ class HaPolliniCard extends HTMLElement {
     const title =
       this._config.title || attrs.friendly_name || stateObj.entity_id;
     const name = attrs.nome || attrs.famiglia || "";
+    const isSummary = !!attrs.famiglie_piu_presenti;
     const forecast = attrs.previsioni || attrs.giorni || [];
     const selected = forecast.length
       ? Math.min(this._selectedDay, forecast.length - 1)
@@ -118,11 +122,34 @@ class HaPolliniCard extends HTMLElement {
             <span class="updated">${attrs.aggiornamento ? "Agg. " + attrs.aggiornamento : attrs.provincia || ""}</span>
           </div>
           ${this._badge(level, name)}
+          ${
+            isSummary
+              ? this._summaryList(attrs.famiglie_piu_presenti || [])
+              : ""
+          }
           ${this._config.show_subs && subs.length ? this._subs(subs) : ""}
-          ${this._forecast(forecast, selected)}
+          ${
+            this._config.show_forecast
+              ? this._forecast(forecast, selected)
+              : ""
+          }
           ${extras.length ? this._extras(extras) : ""}
         </div>
       </ha-card>`;
+  }
+
+  _summaryList(list) {
+    if (!list.length) return "";
+    const items = list
+      .map((row) => {
+        const color = LEVEL_COLORS[row.livello] || "#999";
+        return `<div class="sum-row">
+            <span class="s-name">${row.nome || row.chiave || ""}</span>
+            <span class="s-lvl" style="color:${color}">${row.livello || ""}</span>
+          </div>`;
+      })
+      .join("");
+    return `<div class="summary"><div class="sum-title">Pollini più presenti</div>${items}</div>`;
   }
 
   _badge(level, name) {
@@ -197,6 +224,11 @@ class HaPolliniCard extends HTMLElement {
       .sub { display: flex; gap: 6px; align-items: baseline; font-size: .85rem; background: var(--secondary-background-color, #f4f4f4); border-radius: 8px; padding: 3px 8px; }
       .s-name { color: var(--primary-text-color); }
       .s-level { font-weight: 600; }
+      .summary { margin-top: 12px; border-top: 1px solid var(--divider-color); padding-top: 8px; }
+      .sum-title { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--secondary-text-color); margin-bottom: 4px; }
+      .sum-row { display: flex; gap: 8px; align-items: baseline; font-size: .85rem; padding: 2px 0; }
+      .sum-row .s-name { font-weight: 600; }
+      .sum-row .s-lvl { margin-left: auto; font-weight: 600; }
       .forecast { display: flex; gap: 6px; margin-top: 12px; overflow-x: auto; }
       .day { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 48px; flex: 1; cursor: pointer; border-radius: 8px; padding: 3px 0; }
       .day.selected { background: var(--secondary-background-color, rgba(128,128,128,.14)); }
@@ -220,6 +252,7 @@ const EDITOR_LABELS = {
   title: "Titolo (opzionale)",
   entities: "Altre famiglie (opzionale)",
   show_subs: "Mostra le sottospecie",
+  show_forecast: "Mostra le previsioni",
 };
 
 class HaPolliniCardEditor extends HTMLElement {
@@ -232,8 +265,15 @@ class HaPolliniCardEditor extends HTMLElement {
   }
 
   setConfig(config) {
-    this._config = config || {};
+    this._config = { ...HaPolliniCardEditor._defaults(), ...(config || {}) };
     this._render();
+  }
+
+  static _defaults() {
+    return {
+      show_subs: true,
+      show_forecast: true,
+    };
   }
 
   set hass(hass) {
@@ -274,6 +314,7 @@ class HaPolliniCardEditor extends HTMLElement {
         },
       },
       { name: "show_subs", selector: { boolean: {} } },
+      { name: "show_forecast", selector: { boolean: {} } },
     ];
     this._form.computeLabel = (schema) => EDITOR_LABELS[schema.name] || schema.name;
   }

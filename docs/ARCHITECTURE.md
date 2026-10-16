@@ -49,7 +49,8 @@ l'etichetta a chiave prendendo la parte prima di `/` in minuscolo.
 
 - **Una famiglia = un sensore.** Lo stato è il livello testuale
   (Assente/Basso/Medio/Alto), più leggibile di un numero.
-- `unique_id` entità = `<canonical>_<family>` (o `<canonical>_index`).
+- `unique_id` entità = `<canonical>_<family>` (o `<canonical>_index` /
+  `<canonical>_riepilogo`).
 - Il primo giorno parsato è sempre **oggi**: `PollenCoordinator.current_day`
   restituisce `days[0]`.
 - Le famiglie non selezionate non vengono create; al cambio opzioni le entità
@@ -68,6 +69,6 @@ I 4 livelli colore sono replicati nel JS.
 ```
 config flow (search_localita) -> entry(canonical)
    -> PollenCoordinator (fetch /meteo/<canonical>/pollini, segue redirect, parse, cache TTL)
-   -> sensor.py: 1 sensore/famiglia + indice
+   -> sensor.py: 1 sensore/famiglia + indice + riepilogo
    -> card JS legge attributi (livello, sottospecie, previsioni)
 ```

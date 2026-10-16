@@ -28,6 +28,7 @@ Per ogni comune configurato:
 | --- | --- |
 | `sensor.<localita>_<famiglia>` | Livello di polline di una famiglia (Assente/Basso/Medio/Alto) |
 | `sensor.<localita>_indice` | Livello peggiore tra le famiglie selezionate |
+| `sensor.<localita>_riepilogo` | Riepilogo: livello peggiore + famiglie più presenti |
 
 Esempio di famiglie: `sensor.pollini_roma_composite`,
 `sensor.pollini_roma_graminacee`, `sensor.pollini_roma_urticacee`. Gli id
@@ -42,6 +43,14 @@ selezionate nelle opzioni non vengono create.
 - `sottospecie` — elenco delle specie con il relativo livello
 - `previsioni` — i 7 giorni con livello, indice e sottospecie
 - `provincia` — provincia risolta, `aggiornamento` — timestamp del bollettino
+
+### Attributi dell'entità riepilogo
+
+- `livello`, `indice`, `colore` — riepilogo complessivo (peggiore delle famiglie)
+- `famiglie_piu_presenti` — famiglie oltre il livello "Assente", ordinate per
+  severità
+- `famiglie` — tutte le famiglie selezionate, ordinate per severità
+- `conteggio_per_livello`, `famiglie_presenti`, `totale_famiglie`, `giorni`
 
 ## Installazione
 
@@ -70,8 +79,8 @@ tua configurazione e riavvia.
 
 L'integrazione include e registra automaticamente la card `ha-pollini-card`
 (non serve installare nulla dal frontend). La card si configura anche
-dall'**editor visuale** (entità principale, titolo, famiglie aggiuntive e
-opzione per le sottospecie).
+dall'**editor visuale** (entità principale, titolo, famiglie aggiuntive,
+sottospecie e previsioni).
 
 Esempio minimo (una sola famiglia o l'indice):
 
@@ -102,6 +111,29 @@ Nella striscia delle previsioni ogni giornata è **cliccabile**: selezionandola,
 badge in evidenza e le sottospecie si aggiornano a quella data (la giornata scelta
 è evidenziata; di default è "oggi"). Cliccando il badge si apre la finestra con lo
 **storico** dell'entità.
+
+### Opzioni della card
+
+| Opzione | Default | Descrizione |
+| --- | --- | --- |
+| `title` | nome entità | Titolo della card |
+| `entity` | — | Famiglia (o indice) mostrata in evidenza |
+| `entities` | — | Famiglie aggiuntive mostrate come righe |
+| `show_subs` | `true` | Mostra le sottospecie della famiglia selezionata |
+| `show_forecast` | `true` | Mostra la striscia dei giorni |
+
+Per disattivare un'opzione impostala a `false`, ad esempio:
+
+```yaml
+type: custom:ha-pollini-card
+title: Pollini — Roma
+entity: sensor.pollini_roma_composite
+show_forecast: false
+```
+
+Se l'entità principale è il riepilogo (`sensor.<localita>_riepilogo`), la card
+mostra anche la sezione **"Pollini più presenti"** con le famiglie oltre il
+livello "Assente".
 
 ### Alternativa con le card built-in
 
