@@ -223,21 +223,7 @@ class PollenSummarySensor(_PollenBaseSensor):
         self._attr_unique_id = f"{coordinator.canonical}_riepilogo"
 
     def _rows(self) -> list[dict[str, Any]]:
-        rows: list[dict[str, Any]] = []
-        for key in _selected_keys(self.coordinator):
-            level = _family_level(self.coordinator, key)
-            index = _level_index(level) or 0
-            rows.append(
-                {
-                    "chiave": key,
-                    "nome": FAMILIES[key],
-                    "livello": level,
-                    "indice": index,
-                    "colore": _level_color(level),
-                }
-            )
-        rows.sort(key=lambda row: (-row["indice"], row["nome"]))
-        return rows
+        return _day_rows(self.coordinator, 0)
 
     @property
     def native_value(self) -> str | None:
@@ -264,10 +250,60 @@ class PollenSummarySensor(_PollenBaseSensor):
                 "totale_famiglie": len(rows),
                 "famiglie_presenti": len(present),
                 "famiglie": rows,
+                "previsioni": _serialize_summary_days(self.coordinator),
                 "giorni": _worst_by_day(self.coordinator),
             }
         )
         return attrs
+
+
+def _day_rows(
+    coordinator: PollenCoordinator, day_index: int
+) -> list[dict[str, Any]]:
+    """Selected families for one day, ordered by severity then name."""
+    rows: list[dict[str, Any]] = []
+    for key in _selected_keys(coordinator):
+        level = _family_level(coordinator, key, day_index)
+        index = _level_index(level) or 0
+        rows.append(
+            {
+                "chiave": key,
+                "nome": FAMILIES[key],
+                "livello": level,
+                "indice": index,
+                "colore": _level_color(level),
+            }
+        )
+    rows.sort(key=lambda row: (-row["indice"], row["nome"]))
+    return rows
+
+
+def _serialize_summary_days(coordinator: PollenCoordinator) -> list[dict[str, Any]]:
+    """Per-day family breakdown for the summary, so the card is day-aware."""
+    if not coordinator.data:
+        return []
+    result: list[dict[str, Any]] = []
+    for day_index in range(len(coordinator.data.days)):
+        rows = _day_rows(coordinator, day_index)
+        worst: str | None = None
+        worst_index = 0
+        for row in rows:
+            if row["indice"] > worst_index:
+                worst_index = row["indice"]
+                worst = row["livello"]
+        result.append(
+            {
+                "giorno": _day_label(day_index),
+                "livello": worst,
+                "indice": worst_index or None,
+                "colore": _level_color(worst),
+                "famiglie": rows,
+                "famiglie_piu_presenti": [
+                    row for row in rows if row["indice"] > 1
+                ],
+            }
+        )
+    return result
 
 
 def _serialize_subs(coordinator: PollenCoordinator, key: str) -> list[dict[str, Any]]:

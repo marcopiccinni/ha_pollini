@@ -5,6 +5,15 @@ Tutte le modifiche degne di nota di questo progetto.
 Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e il
 progetto usa il [Versionamento Semantico](https://semver.org/lang/it/).
 
+## [0.1.5] - 2026-10-16
+
+### Corretto
+
+- Nel riepilogo, selezionando un giorno di previsione non si aggiornavano le
+  famiglie e i relativi livelli. Ora `previsioni` del riepilogo contiene le
+  famiglie (`famiglie`, `famiglie_piu_presenti`) per ogni giorno e la card
+  aggiorna l'elenco "Pollini più presenti" in base al giorno selezionato.
+
 ## [0.1.4] - 2026-10-16
 
 ### Aggiunto

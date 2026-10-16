@@ -69,6 +69,6 @@ I 4 livelli colore sono replicati nel JS.
 ```
 config flow (search_localita) -> entry(canonical)
    -> PollenCoordinator (fetch /meteo/<canonical>/pollini, segue redirect, parse, cache TTL)
-   -> sensor.py: 1 sensore/famiglia + indice + riepilogo
+   -> sensor.py: 1 sensore/famiglia + indice + riepilogo (con `previsioni` per giorno)
    -> card JS legge attributi (livello, sottospecie, previsioni)
 ```

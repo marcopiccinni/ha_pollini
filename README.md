@@ -50,6 +50,9 @@ selezionate nelle opzioni non vengono create.
 - `famiglie_piu_presenti` — famiglie oltre il livello "Assente", ordinate per
   severità
 - `famiglie` — tutte le famiglie selezionate, ordinate per severità
+- `previsioni` — un elemento per giorno con il livello peggiore del giorno e le
+  famiglie (`famiglie`, `famiglie_piu_presenti`), così la card può mostrare
+  l'elenco aggiornato quando si seleziona un giorno
 - `conteggio_per_livello`, `famiglie_presenti`, `totale_famiglie`, `giorni`
 
 ## Installazione
@@ -133,7 +136,8 @@ show_forecast: false
 
 Se l'entità principale è il riepilogo (`sensor.<localita>_riepilogo`), la card
 mostra anche la sezione **"Pollini più presenti"** con le famiglie oltre il
-livello "Assente".
+livello "Assente". Selezionando un giorno nella striscia delle previsioni, sia
+il badge sia l'elenco si aggiornano a quel giorno.
 
 ### Alternativa con le card built-in
 

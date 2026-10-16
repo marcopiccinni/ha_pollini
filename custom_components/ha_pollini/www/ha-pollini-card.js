@@ -15,7 +15,7 @@ const LEVEL_COLORS = {
   Medio: "#ef6c00",
   Alto: "#c62828",
 };
-const CARD_VERSION = "0.1.4";
+const CARD_VERSION = "0.1.5";
 
 class HaPolliniCard extends HTMLElement {
   constructor() {
@@ -109,6 +109,10 @@ class HaPolliniCard extends HTMLElement {
           ? day.livello || ""
           : "";
     const subs = day ? day.sottospecie || [] : attrs.sottospecie || [];
+    const summaryList =
+      selected > 0 && day
+        ? day.famiglie_piu_presenti || []
+        : attrs.famiglie_piu_presenti || [];
     const extras = (this._config.entities || [])
       .map((id) => this._state(id))
       .filter(Boolean);
@@ -124,7 +128,7 @@ class HaPolliniCard extends HTMLElement {
           ${this._badge(level, name)}
           ${
             isSummary
-              ? this._summaryList(attrs.famiglie_piu_presenti || [])
+              ? this._summaryList(summaryList)
               : ""
           }
           ${this._config.show_subs && subs.length ? this._subs(subs) : ""}
