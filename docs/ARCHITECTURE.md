@@ -61,8 +61,12 @@ l'etichetta a chiave prendendo la parte prima di `/` in minuscolo.
 
 `www/ha-pollini-card.js` è servita dall'integrazione e caricata con
 `frontend.add_extra_js_url` in `__init__.py::_async_register_card`. Definisce
-l'elemento `ha-pollini-card` e lo espone nel picker tramite `window.customCards`.
-I 4 livelli colore sono replicati nel JS.
+l'elemento `ha-pollini-card` e lo espone nel card picker. Le opzioni sono gestite
+da `setConfig` (con default robusti) e dall'editor `ha-pollini-card-editor`; le
+azioni (`tap_action`, `hold_action`, `double_tap_action`) usano i selector
+`ui_action` e la stessa semantica delle card native. Due palette colori
+(`default`, `colorblind`) e due varianti (`gauge`, `bar`) sono definite nel file:
+la card è vanilla JS, senza build.
 
 ## Flusso
 
