@@ -6,7 +6,7 @@ from datetime import timedelta
 from typing import Final
 
 DOMAIN: Final = "ha_pollini"
-VERSION: Final = "0.2.0"
+VERSION: Final = "0.3.0"
 
 # 3BMeteo public web pages (scraped; see DISCLAIMER).
 BASE_URL: Final = "https://www.3bmeteo.com"
@@ -51,6 +51,29 @@ FAMILIES: Final[dict[str, str]] = {
     "urticacee": "Urticacee",
 }
 DEFAULT_FAMILIES: Final = list(FAMILIES)
+
+# Typical flowering season per family (first -> last month, 1-12, inclusive).
+# Approximate, best-effort values for the Italian peninsula used only to flag
+# whether a family is "in season"; they are NOT a medical/clinical source.
+# A range whose last month is lower than the first wraps across the new year
+# (e.g. Cupressacee/Taxacee bloom in late winter: December -> March).
+POLLEN_SEASON: Final[dict[str, tuple[int, int]]] = {
+    "aceracee": (3, 4),
+    "betulacee": (2, 4),
+    "chenopodiacee": (7, 9),
+    "composite": (8, 10),
+    "corilacee": (1, 3),
+    "cupressacee": (12, 3),
+    "fagacee": (4, 5),
+    "graminacee": (4, 7),
+    "oleacee": (4, 6),
+    "pinacee": (3, 5),
+    "platanacee": (3, 4),
+    "poligonacee": (7, 9),
+    "salicacee": (3, 5),
+    "ulmacee": (2, 4),
+    "urticacee": (4, 9),
+}
 
 # The site prints family names sometimes with a "/" pair and lowercase the
 # first letter; normalise the label back to a key.

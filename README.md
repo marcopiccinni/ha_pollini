@@ -42,6 +42,8 @@ selezionate nelle opzioni non vengono create.
 - `indice` — 1…4, `colore` — colore del livello
 - `nome` — nome esteso (es. `Cupressacee/Taxacee`), `famiglia` — chiave
 - `sottospecie` — elenco delle specie con il relativo livello
+- `in_stagione` — `true` se la famiglia è tipicamente in fioritura nel mese
+  corrente (calendario approssimativo, non clinico)
 - `previsioni` — i 7 giorni con livello, indice e sottospecie
 - `provincia` — provincia risolta, `aggiornamento` — timestamp del bollettino
 
@@ -55,6 +57,7 @@ selezionate nelle opzioni non vengono create.
   famiglie (`famiglie`, `famiglie_piu_presenti`), così la card può mostrare
   l'elenco aggiornato quando si seleziona un giorno
 - `conteggio_per_livello`, `famiglie_presenti`, `totale_famiglie`, `giorni`
+- `trend` — `su`/`giu`/`stabile` rispetto all'aggiornamento precedente
 
 ### Indice numerico
 
@@ -137,8 +140,9 @@ badge in evidenza e le sottospecie si aggiornano a quella data (la giornata scel
 | `show_badge_name` | `true` | Mostra il nome della famiglia nel riquadro dello stato |
 | `forecast_days` | tutti | Quante giornate mostrare nella striscia delle previsioni (oggi incluso, 1-7) |
 | `font_size` | `normal` | Dimensione del testo: `small`, `normal`, `large`, `xlarge` (non modifica titolo, ultimo aggiornamento e stato principale) |
-| `variant` | `gauge` | Visualizzazione principale: `gauge` (badge colorato) o `bar` (barra dei livelli) |
+| `variant` | `gauge` | Visualizzazione principale: `gauge` (badge colorato), `bar` (barra dei livelli) o `bars` (una riga per famiglia) |
 | `color_scheme` | `default` | Palette dei colori: `default` o `colorblind` (sicura per i daltonici) |
+| `language` | `auto` | Lingua dell'interfaccia: `auto` (segue Home Assistant), `it` o `en` |
 | `show_title` | `true` | Mostra l'intestazione (titolo + ultimo aggiornamento) |
 | `compact` | `false` | Layout più denso (padding e spazi ridotti) |
 | `relative_time` | `true` | Ultimo aggiornamento in forma relativa ("5 min fa"); `false` per `gg/mm hh:mm` |
@@ -182,6 +186,13 @@ Se l'entità principale è il riepilogo (`sensor.<localita>_riepilogo`), la card
 mostra anche la sezione **"Pollini più presenti"** con le famiglie oltre il
 livello "Assente". Selezionando un giorno nella striscia delle previsioni, sia
 il badge sia l'elenco si aggiornano a quel giorno.
+
+La card mostra una **freccia di tendenza** accanto al valore (▲ peggiora,
+▼ migliora, ▬ stabile), ricavata dall'attributo `trend` di `Riepilogo` e
+`Indice numerico`. Sui sensori famiglia, se la famiglia è tipicamente in
+fioritura nel mese corrente (attributo `in_stagione`), compare l'indicazione
+**"In stagione"**. Con `variant: bars` la visualizzazione principale diventa un
+elenco: una riga per famiglia con barra e livello.
 
 ### Alternativa con le card built-in
 

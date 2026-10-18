@@ -41,6 +41,7 @@ class PollenCoordinator(DataUpdateCoordinator[PollenReport]):
             config_entry=entry,
         )
         self.entry = entry
+        self.previous_data: PollenReport | None = None
 
     @property
     def families(self) -> list[str]:
@@ -48,14 +49,17 @@ class PollenCoordinator(DataUpdateCoordinator[PollenReport]):
         return list(self.entry.options.get(CONF_FAMILIES, DEFAULT_FAMILIES))
 
     async def _async_update_data(self) -> PollenReport:
+        previous = self.data
         try:
-            return await self.client.async_get(self.canonical)
+            report = await self.client.async_get(self.canonical)
         except TimeoutError as err:
             raise UpdateFailed("Timeout fetching pollen page") from err
         except aiohttp.ClientError as err:
             raise UpdateFailed(f"Error fetching pollen page: {err}") from err
         except ValueError as err:
             raise UpdateFailed(f"Invalid pollen page: {err}") from err
+        self.previous_data = previous
+        return report
 
     def current_day(self) -> PollenDay | None:
         """Return today's forecast.

@@ -76,8 +76,14 @@ l'elemento `ha-pollini-card` e lo espone nel card picker. Le opzioni sono gestit
 da `setConfig` (con default robusti) e dall'editor `ha-pollini-card-editor`; le
 azioni (`tap_action`, `hold_action`, `double_tap_action`) usano i selector
 `ui_action` e la stessa semantica delle card native. Due palette colori
-(`default`, `colorblind`) e due varianti (`gauge`, `bar`) sono definite nel file:
-la card è vanilla JS, senza build.
+(`default`, `colorblind`) e tre varianti (`gauge`, `bar`, `bars`) sono definite
+nel file: la card è vanilla JS, senza build. L'interfaccia è localizzata IT/EN
+(`_t`/`_lvl` da `hass.locale.language`, override con `language`) e accessibile
+(ruoli/`aria-label`, navigazione da tastiera dei giorni). La freccia di tendenza
+legge l'attributo `trend` calcolato dai sensori confrontando l'indice corrente
+con `coordinator.previous_data`. La stagionalità usa `const.POLLEN_SEASON`
+(calendario approssimativo, con stagioni che possono scavalcare l'anno) e
+`stats.in_season`.
 
 ## Flusso
 

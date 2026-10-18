@@ -5,6 +5,26 @@ Tutte le modifiche degne di nota di questo progetto.
 Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e il
 progetto usa il [Versionamento Semantico](https://semver.org/lang/it/).
 
+## [0.3.0] - 2026-10-18
+
+### Aggiunto
+
+- **Card localizzata (IT/EN)**: le etichette dell'interfaccia seguono la lingua
+  di Home Assistant, con override tramite la nuova opzione `language`
+  (`auto`/`it`/`en`). Sono tradotti anche i livelli e i testi relativi
+  ("Agg.", "Non disponibile", ecc.).
+- **Nuova variante `bars`** per la card: una riga per ogni famiglia con barra,
+  nome e livello; ogni riga apre lo storico del sensore.
+- **Stagionalità**: i sensori famiglia espongono `in_stagione` (se la famiglia è
+  tipicamente in fioritura nel mese corrente) e la card mostra un'indicazione
+  "In stagione". Calendario approssimativo in `const.POLLEN_SEASON`.
+- **Tendenza** (`trend`) sugli attributi di `Riepilogo` e `Indice numerico`:
+  `su`/`giu`/`stabile` confrontando l'indice con l'aggiornamento precedente; la
+  card mostra una freccia accanto al valore.
+- **Accessibilità**: badge/barra/righe e giorni delle previsioni hanno
+  `role`/`aria-label`, i giorni sono navigabili da tastiera (frecce + Invio) e
+  compare un contorno `:focus-visible`.
+
 ## [0.2.0] - 2026-10-18
 
 ### Aggiunto

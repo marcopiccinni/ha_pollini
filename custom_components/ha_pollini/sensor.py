@@ -22,9 +22,12 @@ from .const import (
     FAMILIES,
     LEVELS,
     POLLEN_PATH,
+    POLLEN_SEASON,
 )
 from .coordinator import PollenCoordinator
+from .stats import in_season as _in_season
 from .stats import numeric_index
+from .stats import trend as _trend_of
 
 
 def _selected_keys(coordinator: PollenCoordinator) -> list[str]:
@@ -153,6 +156,7 @@ class PollenFamilySensor(_PollenBaseSensor):
                 "livello": level,
                 "indice": _level_index(level),
                 "colore": _level_color(level),
+                "in_stagione": _is_in_season(self.key),
                 "sottospecie": _serialize_subs(self.coordinator, self.key),
                 "previsioni": _serialize_days(self.coordinator, self.key),
             }
@@ -208,10 +212,40 @@ def _numeric_index(coordinator: PollenCoordinator) -> float | None:
     air-quality index and keeps Home Assistant's long-term statistics working.
     Only families with a known level contribute.
     """
+    return _numeric_index_in(coordinator.data, _selected_keys(coordinator))
+
+
+def _numeric_index_in(report, keys: list[str]) -> float | None:
+    """Like :func:`_numeric_index` but for an arbitrary report."""
+    if report is None or not report.days:
+        return None
+    day = report.days[0]
     return numeric_index(
-        _level_index(_family_level(coordinator, key))
-        for key in _selected_keys(coordinator)
+        _level_index(day.families.get(key).level if day.families.get(key) else None)
+        for key in keys
     )
+
+
+def _previous_numeric_index(coordinator: PollenCoordinator) -> float | None:
+    """Numeric index of the previous refresh (``None`` on the first one)."""
+    previous = getattr(coordinator, "previous_data", None)
+    if previous is None:
+        return None
+    return _numeric_index_in(previous, _selected_keys(coordinator))
+
+
+def _trend(coordinator: PollenCoordinator, current: float | None) -> str | None:
+    """Direction (``su``/``giu``/``stabile``) since the previous refresh."""
+    return _trend_of(current, _previous_numeric_index(coordinator))
+
+
+def _is_in_season(key: str, month: int | None = None) -> bool:
+    """Whether ``key`` is typically flowering in ``month`` (local time)."""
+    season = POLLEN_SEASON.get(key)
+    if season is None:
+        return False
+    m = month if month is not None else dt_util.now().month
+    return _in_season(season[0], season[1], m)
 
 
 def _family_level(
@@ -261,6 +295,7 @@ class PollenSummarySensor(_PollenBaseSensor):
                 "livello": level,
                 "indice": _level_index(level),
                 "colore": _level_color(level),
+                "trend": _trend(self.coordinator, _numeric_index(self.coordinator)),
                 "famiglie_piu_presenti": present,
                 "conteggio_per_livello": counts,
                 "totale_famiglie": len(rows),
@@ -419,6 +454,7 @@ class PollenValueSensor(_PollenBaseSensor):
                 "livello": worst,
                 "indice": _level_index(worst),
                 "colore": _level_color(worst),
+                "trend": _trend(self.coordinator, _numeric_index(self.coordinator)),
                 "famiglie": rows,
                 "conteggio_per_livello": counts,
                 "totale_famiglie": len(rows),

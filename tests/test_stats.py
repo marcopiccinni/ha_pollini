@@ -35,3 +35,39 @@ def test_levels_map_to_site_indices() -> None:
         3,
         4,
     ]
+
+
+def test_trend_direction() -> None:
+    assert stats.trend(60.0, 50.0) == "su"
+    assert stats.trend(40.0, 50.0) == "giu"
+    assert stats.trend(50.0, 50.0) == "stabile"
+
+
+def test_trend_threshold_filters_noise() -> None:
+    assert stats.trend(50.5, 50.0) == "stabile"
+    assert stats.trend(51.5, 50.0) == "su"
+
+
+def test_trend_missing_values() -> None:
+    assert stats.trend(None, 50.0) is None
+    assert stats.trend(50.0, None) is None
+
+
+def test_in_season_plain_range() -> None:
+    assert stats.in_season(4, 7, 5) is True
+    assert stats.in_season(4, 7, 4) is True
+    assert stats.in_season(4, 7, 7) is True
+    assert stats.in_season(4, 7, 3) is False
+    assert stats.in_season(4, 7, 8) is False
+
+
+def test_in_season_wrapping_range() -> None:
+    assert stats.in_season(12, 3, 12) is True
+    assert stats.in_season(12, 3, 1) is True
+    assert stats.in_season(12, 3, 3) is True
+    assert stats.in_season(12, 3, 6) is False
+
+
+def test_season_map_covers_every_family() -> None:
+    for key in const.FAMILIES:
+        assert key in const.POLLEN_SEASON
