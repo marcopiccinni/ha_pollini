@@ -93,7 +93,7 @@ const IT_MONTHS = {
   dicembre: 12,
 };
 
-const CARD_VERSION = "0.3.0";
+const CARD_VERSION = "0.4.0";
 
 class HaPolliniCard extends HTMLElement {
   constructor() {

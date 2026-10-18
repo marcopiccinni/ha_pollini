@@ -98,6 +98,10 @@ L'integrazione include e registra automaticamente la card `ha-pollini-card`
 dall'**editor visuale** (entità principale, titolo, famiglie aggiuntive,
 sottospecie e previsioni).
 
+| Badge (famiglia) | Variante `bars` |
+| --- | --- |
+| ![Card pollini, variante badge](docs/images/card-badge.png) | ![Card pollini, variante bars](docs/images/card-bars.png) |
+
 Esempio minimo (una sola famiglia o l'indice):
 
 ```yaml
