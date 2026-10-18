@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Any
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
@@ -24,6 +24,7 @@ from .const import (
     POLLEN_PATH,
 )
 from .coordinator import PollenCoordinator
+from .stats import numeric_index
 
 
 def _selected_keys(coordinator: PollenCoordinator) -> list[str]:
@@ -65,6 +66,7 @@ async def async_setup_entry(
     ]
     entities.append(PollenIndexSensor(coordinator))
     entities.append(PollenSummarySensor(coordinator))
+    entities.append(PollenValueSensor(coordinator))
     async_add_entities(entities)
 
 
@@ -78,6 +80,7 @@ def _remove_orphan_entities(
     expected = {f"{canonical}_{key}" for key in keys}
     expected.add(f"{canonical}_index")
     expected.add(f"{canonical}_riepilogo")
+    expected.add(f"{canonical}_indice_pct")
     registry = er.async_get(hass)
     for reg_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
         if reg_entry.unique_id not in expected:
@@ -196,6 +199,19 @@ def _worst_level(coordinator: PollenCoordinator) -> str | None:
             worst_index = index
             worst = _family_level(coordinator, key)
     return worst
+
+
+def _numeric_index(coordinator: PollenCoordinator) -> float | None:
+    """Mean pollen level of the selected families on a 0-100 scale.
+
+    Levels map to 0/33.3/66.7/100, so the value is easy to compare with the
+    air-quality index and keeps Home Assistant's long-term statistics working.
+    Only families with a known level contribute.
+    """
+    return numeric_index(
+        _level_index(_family_level(coordinator, key))
+        for key in _selected_keys(coordinator)
+    )
 
 
 def _family_level(
@@ -364,3 +380,48 @@ def _worst_by_day(coordinator: PollenCoordinator) -> list[dict[str, Any]]:
             }
         )
     return result
+
+
+class PollenValueSensor(_PollenBaseSensor):
+    """Overall pollen level as a number (0-100, 100 = highest level).
+
+    Exposed with ``state_class: measurement`` so Home Assistant keeps
+    long-term statistics: history graphs, statistics cards and numeric
+    thresholds in automations. The worst-level text stays on the index and
+    summary sensors, which keep their original behaviour.
+    """
+
+    _attr_name = "Indice numerico"
+    _attr_icon = "mdi:gauge"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_suggested_display_precision = 1
+
+    def __init__(self, coordinator: PollenCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.canonical}_indice_pct"
+
+    @property
+    def native_value(self) -> float | None:
+        return _numeric_index(self.coordinator)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        rows = _day_rows(self.coordinator, 0)
+        worst = _worst_level(self.coordinator)
+        counts: dict[str, int] = {}
+        for row in rows:
+            name = row["livello"] or "—"
+            counts[name] = counts.get(name, 0) + 1
+        attrs = self._base_attributes()
+        attrs.update(
+            {
+                "scala": "Pollini 0-100",
+                "livello": worst,
+                "indice": _level_index(worst),
+                "colore": _level_color(worst),
+                "famiglie": rows,
+                "conteggio_per_livello": counts,
+                "totale_famiglie": len(rows),
+            }
+        )
+        return attrs

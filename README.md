@@ -29,6 +29,7 @@ Per ogni comune configurato:
 | `sensor.<localita>_<famiglia>` | Livello di polline di una famiglia (Assente/Basso/Medio/Alto) |
 | `sensor.<localita>_indice` | Livello peggiore tra le famiglie selezionate |
 | `sensor.<localita>_riepilogo` | Riepilogo: livello peggiore + famiglie più presenti |
+| `sensor.<localita>_indice_numerico` | **Indice numerico** 0-100 (per statistiche, storico e soglie) |
 
 Esempio di famiglie: `sensor.pollini_roma_composite`,
 `sensor.pollini_roma_graminacee`, `sensor.pollini_roma_urticacee`. Gli id
@@ -54,6 +55,15 @@ selezionate nelle opzioni non vengono create.
   famiglie (`famiglie`, `famiglie_piu_presenti`), così la card può mostrare
   l'elenco aggiornato quando si seleziona un giorno
 - `conteggio_per_livello`, `famiglie_presenti`, `totale_famiglie`, `giorni`
+
+### Indice numerico
+
+`sensor.<località>_indice_numerico` è un numero **0-100** (0 = Assente, 100 =
+Alto) pari alla **media** dei livelli delle famiglie selezionate, con
+`state_class: measurement`: così funzionano le statistiche a lungo termine, i
+grafici di storico e le soglie numeriche nelle automazioni. La mappatura è
+Assente `0`, Basso `33.3`, Medio `66.7`, Alto `100`. Il livello peggiore
+testuale resta su `indice` e `riepilogo`.
 
 ## Installazione
 

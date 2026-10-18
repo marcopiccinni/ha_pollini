@@ -1,20 +1,15 @@
 """HTTP client and HTML parser for 3BMeteo pollen pages.
 
-The pollen page (``/meteo/<canonical>/pollini``) is server-rendered and, since
-pollen is forecast per province, any town URL redirects to the province page
-(e.g. ``/meteo/roma/pollini``). The page lists seven days; for each day it
-shows the pollen level ("Assente", "Basso", "Medio", "Alto") for fifteen
-families, each with an optional list of sub-species.
+The parsing itself lives in :mod:`.parser` (free of Home Assistant imports);
+this module only performs the HTTP fetches, the location search and the
+short-lived cache.
 """
 
 from __future__ import annotations
 
 import asyncio
-import html
 import logging
-import re
 import time
-from dataclasses import dataclass, field
 
 import aiohttp
 from homeassistant.core import HomeAssistant
@@ -26,106 +21,20 @@ from .const import (
     POLLEN_PATH,
     SEARCH_PATH,
     USER_AGENT,
-    family_key,
 )
+from .models import PollenDay, PollenFamily, PollenReport, PollenSub
+from .parser import parse_pollen
 
 _LOGGER = logging.getLogger(__name__)
 
-_UPDATED_RE = re.compile(r"Aggiornamento:\s*([^<]+)")
-_TAB_RE = re.compile(
-    r'<a href="#(\d+)"[^>]*class="tab[^"]*"[^>]*>\s*([^<]+?)\s*</a>'
-)
-_PANEL_RE = re.compile(r'id="(\d)" class="content-day[^"]*"')
-_FAMILY_RE = re.compile(
-    r'family-name[^>]*>([^<]+)</span>\s*'
-    r'<div class="tag (tag-[a-z]+) ds-label-small">\s*([A-Za-zÀ-ÿ]+)'
-)
-_SUB_RE = re.compile(
-    r'<span class="ds-body-medium">([^<]+?):\s*</span>\s*'
-    r'<div class="tag (tag-[a-z]+) ds-label-small">\s*([A-Za-zÀ-ÿ]+)'
-)
-
-
-@dataclass(slots=True)
-class PollenSub:
-    """One sub-species level within a family."""
-
-    name: str
-    level: str
-
-
-@dataclass(slots=True)
-class PollenFamily:
-    """Pollen level for one family on one day."""
-
-    key: str
-    label: str
-    level: str
-    subs: list[PollenSub] = field(default_factory=list)
-
-
-@dataclass(slots=True)
-class PollenDay:
-    """One day of pollen forecast."""
-
-    label: str | None
-    families: dict[str, PollenFamily] = field(default_factory=dict)
-
-
-@dataclass(slots=True)
-class PollenReport:
-    """Parsed pollen page for one location."""
-
-    canonical: str
-    resolved: str
-    updated: str | None
-    days: list[PollenDay]
-
-
-def parse_pollen(html_text: str, canonical: str = "", resolved: str = "") -> PollenReport:
-    """Parse the pollen HTML page into a :class:`PollenReport`."""
-    updated_match = _UPDATED_RE.search(html_text)
-    tabs = _TAB_RE.findall(html_text)
-    panels = list(_PANEL_RE.finditer(html_text))
-    days: list[PollenDay] = []
-
-    for index, match in enumerate(panels):
-        start = match.end()
-        end = panels[index + 1].start() if index + 1 < len(panels) else start + 300_000
-        segment = html_text[start:end]
-
-        families: dict[str, PollenFamily] = {}
-        positions: list[tuple[int, str]] = []
-        for fam in _FAMILY_RE.finditer(segment):
-            label = html.unescape(fam.group(1)).strip()
-            key = family_key(label)
-            if key is None:
-                continue
-            families[key] = PollenFamily(key=key, label=label, level=fam.group(3))
-            positions.append((fam.start(), key))
-
-        for sub in _SUB_RE.finditer(segment):
-            owner: str | None = None
-            for pos, key in positions:
-                if pos < sub.start():
-                    owner = key
-                else:
-                    break
-            if owner is None:
-                continue
-            families[owner].subs.append(
-                PollenSub(name=html.unescape(sub.group(1)).strip(), level=sub.group(3))
-            )
-
-        label = tabs[index][1].strip() if index < len(tabs) else None
-        days.append(PollenDay(label=label, families=families))
-
-    return PollenReport(
-        canonical=canonical,
-        resolved=resolved or canonical,
-        updated=updated_match.group(1).strip() if updated_match else None,
-        days=days,
-    )
+__all__ = [
+    "PollenClient",
+    "PollenDay",
+    "PollenFamily",
+    "PollenReport",
+    "PollenSub",
+    "parse_pollen",
+]
 
 
 async def async_search_locations(
